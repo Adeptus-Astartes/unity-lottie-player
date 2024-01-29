@@ -9,8 +9,23 @@ using UnityEngine.UIElements;
 public class Loader : MonoBehaviour
 {
     public UIDocument uiRoot;
+
+    [SerializeField] private string assetName = "square";
+    
+    [Header("Size")]
+    [SerializeField] private float width = 100;
+    [SerializeField] private float height = 100;
     
     [Header("Import Settings")]
+    
+    [SerializeField] private VectorUtils.Alignment Alignment;
+    [SerializeField] private Vector2 CustomPivot;
+    [SerializeField] private bool GeneratePhysicsShape;
+    [SerializeField] private ViewportOptions ViewportOptions = ViewportOptions.DontPreserve;
+
+    
+    [SerializeField] private bool AdvancedMode = false;
+    
     [SerializeField] private int TargetResolution = 1080;
     [SerializeField] private float ResolutionMultiplier = 1.0f;
     
@@ -22,30 +37,49 @@ public class Loader : MonoBehaviour
     [SerializeField] private bool MaxCordDeviationEnabled = false;
     [SerializeField] private bool MaxTangentAngleEnabled = false;
     [SerializeField] private float MaxTangentAngle = 5.0f;
-    
+
+
     void Start()
     {
-        var data = Resources.Load<TextAsset>("circle");
-
-        var sceneInfo = loadSVG(data.text);
+        //Read string data
+        var data = Resources.Load<TextAsset>(assetName);
+        
+        //Convert into SceneInfo
+        var sceneInfo = LoadSVG(data.text);
 
         //TODO Actual animation
-        
+
+        //Convert Scene into List<Geometry>
         var geoms = VectorUtils.TessellateScene(sceneInfo.Scene, GetTesselationOptions(sceneInfo));
         
         var rect = Rect.zero;
-        //if (ViewportOptions == ViewportOptions.PreserveViewport)
-        rect = sceneInfo.SceneViewport;
+        if (ViewportOptions == ViewportOptions.PreserveViewport)
+            rect = sceneInfo.SceneViewport;
+
+        // **GRAPHICS**
+
+        //UXML Usage
+        //Convert Geometry into VectorImage
         var vectorImage = GenerateVectorImageAsset(geoms, rect);
 
+        //Display VectorImage as background of UXML Element
         var element = uiRoot.rootVisualElement.Q<VisualElement>("image");
         element.style.backgroundImage = new StyleBackground(vectorImage);
+
+        element.style.width = width;
+        element.style.height = height;
     }
-    
-    private SVGParser.SceneInfo loadSVG(string data) {
-        using (var reader = new StringReader(data)) { // not strictly needed but in case switch later.
-            return SVGParser.ImportSVG(reader);
-        }
+
+    private SVGParser.SceneInfo LoadSVG(string data) {
+        
+        SVGParser.SceneInfo sceneInfo;
+        using (var reader = new StringReader(data))
+            sceneInfo = SVGParser.ImportSVG(reader, ViewportOptions, 0, 1, 100, 100);
+
+        if (sceneInfo.Scene == null || sceneInfo.Scene.Root == null)
+            throw new Exception("Wowzers!");
+
+        return sceneInfo;
     }
 
     private VectorUtils.TessellationOptions GetTesselationOptions(SVGParser.SceneInfo sceneInfo)
@@ -55,7 +89,12 @@ public class Loader : MonoBehaviour
         float maxCord = MaxCordDeviationEnabled ? MaxCordDeviation : float.MaxValue;
         float maxTangent = MaxTangentAngleEnabled ? MaxTangentAngle : Mathf.PI * 0.5f;
 
-        ComputeTessellationOptions(sceneInfo, TargetResolution, ResolutionMultiplier, out stepDist, out maxCord, out maxTangent);
+        if (!AdvancedMode)
+        {
+            // Automatically compute sensible tessellation options from the
+            // vector scene's bouding box and target resolution
+            ComputeTessellationOptions(sceneInfo, TargetResolution, ResolutionMultiplier, out stepDist, out maxCord, out maxTangent);
+        }
 
         var tessOptions = new VectorUtils.TessellationOptions();
         tessOptions.MaxCordDeviation = maxCord;
@@ -81,7 +120,7 @@ public class Loader : MonoBehaviour
         maxCord = Mathf.Max(0.01f, 2.0f * sceneRatio);
         maxTangent = Mathf.Max(0.1f, 3.0f * sceneRatio);
     }
-    
+
     private VectorImage GenerateVectorImageAsset(List<VectorUtils.Geometry> geometry, Rect rect)
     {
         UnityEngine.Object asset;
@@ -99,4 +138,28 @@ public class Loader : MonoBehaviour
 
         return (VectorImage)asset;
     }
+    
+    
+    ///
+    ///
+    ///
+    private SVGParser.SceneInfo GenerateSVG() {
+        
+        Dictionary<SceneNode, float> nodeOpacities = new Dictionary<SceneNode, float>();
+        Dictionary<string, SceneNode> nodeIDs = new Dictionary<string, SceneNode>();
+
+
+        var scene = new Scene();
+
+        var root = new SceneNode();
+        root.Transform = new Matrix2D();
+        root.Shapes = new List<Shape>();
+        var shape = new Shape();
+        shape.PathProps = new PathProperties();
+        root.Shapes.Add(shape);
+        scene.Root = root;
+
+        return new SVGParser.SceneInfo(scene, new Rect(0, 0, 15, 15), nodeOpacities, nodeIDs);
+    }
+
 }

@@ -200,7 +200,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 125326798}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.5}
+  m_LocalPosition: {x: 0, y: 0, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -285,8 +285,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiRoot: {fileID: 744489200}
-  resourceImage: {fileID: 7388822144124034973, guid: 0e0176efd4b5749a59f69c30c11e46ad, type: 3}
-  spr: {fileID: 0}
+  assetName: square
+  width: 256
+  height: 256
+  Alignment: 0
+  CustomPivot: {x: 0, y: 0}
+  GeneratePhysicsShape: 0
+  ViewportOptions: 0
+  AdvancedMode: 0
   TargetResolution: 1080
   ResolutionMultiplier: 1
   GradientResolution: 64
@@ -296,6 +302,8 @@ MonoBehaviour:
   MaxCordDeviationEnabled: 0
   MaxTangentAngleEnabled: 0
   MaxTangentAngle: 5
+  outputSprite: {fileID: 0}
+  outputSurface: {fileID: 0}
 --- !u!4 &1209685275
 Transform:
   m_ObjectHideFlags: 0
